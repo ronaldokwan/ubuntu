@@ -1,160 +1,108 @@
 # Ubuntu Setup: My Laptop
 
-Checklist for a fresh **Ubuntu 26.04 LTS** install on this laptop. Do the steps in order. Allow about an hour, plus download time.
+My checklist for a fresh Ubuntu 26.04 LTS install on this laptop. Do the steps in order; the folded "Optional" parts can be skipped. It takes about an hour, plus downloads.
 
 | Part               | Model                          | Setup needed                                                                        |
 | ------------------ | ------------------------------ | ----------------------------------------------------------------------------------- |
 | CPU + graphics     | AMD Ryzen 7 260, Radeon 780M   | Video acceleration check ([step 3](#3-install-codecs-and-check-video-acceleration)) |
 | Dedicated graphics | NVIDIA GeForce RTX 5060 Laptop | NVIDIA driver ([step 4](#4-install-the-nvidia-driver))                              |
 
-## Contents
-
-- [Before you start](#before-you-start)
-
-1. [Update the system](#1-update-the-system)
-2. [Update firmware](#2-update-firmware)
-3. [Install codecs and check video acceleration](#3-install-codecs-and-check-video-acceleration)
-4. [Install the NVIDIA driver](#4-install-the-nvidia-driver)
-5. [Make it look like GNOME](#5-make-it-look-like-gnome)
-6. [Install apps](#6-install-apps)
-7. [Set up Git and VS Code](#7-set-up-git-and-vs-code)
-8. [Set up backups](#8-set-up-backups)
-9. [Maintenance and upgrades](#9-maintenance-and-upgrades)
-
----
-
 ## Before you start
 
-### Using the terminal
+<details>
+<summary>New to the terminal? Read this first</summary>
 
 - Open it with <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>T</kbd>.
 - Paste with <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> (plain <kbd>Ctrl</kbd> + <kbd>V</kbd> doesn't work there).
 - When `sudo` asks for your password, nothing appears as you type. That's normal; type it and press <kbd>Enter</kbd>.
 - When asked `Do you want to continue? [Y/n]`, press <kbd>Enter</kbd>.
 
-### Rules that keep future upgrades safe
+</details>
 
 > [!IMPORTANT]
-> Every choice in this guide follows these rules. Keep following them when you add things later:
+> Every choice in this guide follows these rules, so that future Ubuntu upgrades go smoothly. Keep following them when you add things later:
 >
 > - Install software only from Ubuntu, from the maker's official repository, or from Flathub.
 > - Never install the NVIDIA driver from nvidia.com. Ubuntu's driver is rebuilt for every kernel update; NVIDIA's installer isn't.
 > - Don't uninstall `ubuntu-desktop` or Snap. Ubuntu's upgrades expect both.
 > - Avoid PPAs (unless run by the app's own makers, like OBS's) and `curl ... | bash` install scripts. They're the most common reason an upgrade fails.
 
----
-
 ## 1. Update the system
 
-Installs every update released since the install image was made.
+Install everything released since the install image was made, then restart:
 
 ```bash
-sudo apt update && sudo apt full-upgrade
-```
-
-```bash
-sudo reboot
+sudo apt update && sudo apt full-upgrade && sudo reboot
 ```
 
 ## 2. Update firmware
 
-Updates the laptop's BIOS and device firmware.
+This updates the BIOS and device firmware.
 
 > [!WARNING]
-> Plug in the charger first. A firmware update that loses power halfway can leave the laptop unable to start.
+> Plug in the charger first. Losing power halfway through a firmware update can leave the laptop unable to start.
 
 ```bash
-fwupdmgr refresh --force
-```
-
-```bash
-fwupdmgr update
+fwupdmgr refresh --force && fwupdmgr update
 ```
 
 "No updates available" is normal. If it asks to reboot, do.
 
 ## 3. Install codecs and check video acceleration
 
-Adds the codecs needed for common video and audio formats, plus Microsoft's fonts:
+Codecs for common video and audio formats, plus Microsoft's fonts:
 
 ```bash
 sudo apt install ubuntu-restricted-extras
 ```
 
-> [!TIP]
-> A font licence screen appears partway through. Press <kbd>Tab</kbd> to select `<Ok>` and press <kbd>Enter</kbd>. On the next screen, use the arrow keys to select `<Yes>` and press <kbd>Enter</kbd>.
+Partway through, a font licence screen appears. Press <kbd>Tab</kbd> to select `<Ok>` and <kbd>Enter</kbd>, then on the next screen use the arrow keys to select `<Yes>` and press <kbd>Enter</kbd>.
 
-Ubuntu's AMD driver already decodes video on the Radeon 780M's hardware, which saves battery. Check that it works:
-
-```bash
-sudo apt install vainfo
-```
+Then check that the Radeon 780M decodes video in hardware:
 
 ```bash
-vainfo
+sudo apt install vainfo && vainfo
 ```
 
-Look for `VAProfileH264High`, `VAProfileHEVCMain` and `VAProfileAV1Profile0`, each with `VAEntrypointVLD`. That means H.264, H.265 and AV1 video are decoded by the GPU.
+The list should include `VAProfileH264High`, `VAProfileHEVCMain` and `VAProfileAV1Profile0`, each with `VAEntrypointVLD`.
 
 ## 4. Install the NVIDIA driver
 
-If you ticked **Install third-party software for graphics and Wi-Fi hardware** during installation, the driver may already be there. Check first:
+If you ticked "Install third-party software" during installation, the driver may already be there. Check:
 
 ```bash
 nvidia-smi
 ```
 
-If it lists the RTX 5060, skip to [Using the RTX 5060](#using-the-rtx-5060).
-
-Otherwise, see which driver Ubuntu recommends. RTX 50 cards need one whose name ends in `-open`:
+If it lists the RTX 5060, skip to [Using the RTX 5060](#using-the-rtx-5060). If not, install the driver Ubuntu recommends (for RTX 50 cards, its name ends in `-open`) and restart:
 
 ```bash
-ubuntu-drivers devices
+sudo ubuntu-drivers install && sudo reboot
 ```
 
-Install the recommended one:
+With Secure Boot on, the install may ask you to set a password. Make up a short one with only letters and numbers. After the restart, a blue MOK Management screen appears: choose Enroll MOK → Continue → Yes, type the password, then Reboot.
 
-```bash
-sudo ubuntu-drivers install
-```
-
-> [!NOTE]
-> **If it asks you to set a Secure Boot password:** invent a short one with letters and numbers only. After the reboot, a blue **MOK Management** screen appears. Choose **Enroll MOK → Continue → Yes**, type the password, then **Reboot**. Usually Ubuntu's driver is already signed and this doesn't come up.
-
-```bash
-sudo reboot
-```
-
-Check that it works. It should list the RTX 5060:
-
-```bash
-nvidia-smi
-```
+Run `nvidia-smi` again. It should now list the RTX 5060.
 
 ### Using the RTX 5060
 
-Apps run on the AMD GPU by default, which saves battery. To run an app on the RTX 5060, right-click it in the app grid and choose **Launch using Discrete Graphics Card**. While it runs, `nvidia-smi` lists it under **Processes**.
+Apps run on the AMD GPU by default, which saves battery. To run one on the RTX 5060, right-click it in the app grid and choose **Launch using Discrete Graphics Card**. While it runs, `nvidia-smi` lists it under Processes.
 
 ## 5. Make it look like GNOME
 
-Ubuntu's desktop is GNOME with Ubuntu's changes on top: a dock, desktop icons, the Yaru theme, an orange accent and Ubuntu's fonts. Instead of undoing them one by one, install the plain **GNOME** session and pick it at login.
+Ubuntu's desktop is GNOME plus Ubuntu's own dock, desktop icons, Yaru theme, orange accent and fonts. The plain GNOME session drops all of that at once:
 
 ```bash
 sudo apt install gnome-session gnome-backgrounds sound-theme-freedesktop gnome-tweaks gnome-shell-extension-manager
 ```
 
-1. Log out: open the top-right menu, click the power button, then **Log Out**.
-2. On the login screen, click your name, then the **gear icon** in the bottom-right corner.
-3. Choose **GNOME** and log in. Ubuntu remembers this choice.
+1. Log out: top-right menu → power button → Log Out.
+2. On the login screen, click your name, then the gear icon in the bottom-right corner.
+3. Choose **GNOME** and log in. Ubuntu remembers the choice.
 
-You now have GNOME's theme, icons, fonts, top bar and overview. Press <kbd>Super</kbd> to open the overview; the dash of pinned apps is at the bottom. Right-click an app there to pin or unpin it.
+If GNOME ever misbehaves, pick Ubuntu from the same gear icon; Ubuntu's session stays installed.
 
-> [!TIP]
-> Ubuntu's own session stays installed. If GNOME ever misbehaves, pick **Ubuntu** from the same gear icon.
-
-### Finish the look
-
-Ubuntu changes three settings in every session, not just its own: the accent colour, the terminal font and the sounds. Set them back to GNOME's:
+Ubuntu changes three settings in every session, not just its own: the accent colour, the terminal font and the sounds. Put them back to GNOME's:
 
 ```bash
 gsettings set org.gnome.desktop.interface accent-color 'blue'
@@ -162,103 +110,64 @@ gsettings set org.gnome.desktop.interface monospace-font-name 'Adwaita Mono 11'
 gsettings set org.gnome.desktop.sound theme-name 'freedesktop'
 ```
 
-For GNOME's wallpaper, open **Settings → Appearance** and pick **Adwaita**.
+A few more things to set:
 
-Title bars show only a close button, as in GNOME. For minimize and maximize buttons too, open **Tweaks → Windows → Titlebar Buttons**.
+- Discord, Steam, Proton VPN and OBS need an extension to show their tray icon. In Extension Manager, under System Extensions, turn on **Ubuntu AppIndicators**.
+- For GNOME's wallpaper, go to Settings → Appearance and pick Adwaita.
+- GNOME windows only have a close button. To add minimize and maximize, open Tweaks → Windows → Titlebar Buttons.
+- Press <kbd>Super</kbd> for the overview. Right-click an app in the dash at the bottom to pin or unpin it.
 
-### Turn on tray icons
+Don't install TLP or other power tools; they conflict with Ubuntu's own power management. Switch power modes from the top-right menu.
 
-Discord, Steam, Proton VPN and OBS put an icon in the top bar so you can open or quit them. GNOME needs an extension for that. Open **Extension Manager** and, under **System Extensions**, turn on **Ubuntu AppIndicators**.
+<details>
+<summary>Optional: GNOME-style login screen</summary>
 
-### Login screen
-
-The login screen uses Ubuntu's theme even in the GNOME session. To switch it, run this and type the number of the entry **without** `Yaru` in its path:
+The login screen keeps Ubuntu's theme. To switch it, run each command and type the number of the entry without `Yaru` in its path. If one says there's only one alternative, or none, there's nothing to change.
 
 ```bash
 sudo update-alternatives --config gdm-theme.gresource
 ```
 
-Do the same for the login screen's icons. If it says there's only one alternative, or none, there's nothing to change:
-
 ```bash
 sudo update-alternatives --config gdm-icons.gresource
 ```
 
-You'll see it at the next restart. Ubuntu's logo stays on the login screen.
+The change shows after the next restart. Ubuntu's logo stays.
 
-### Other settings
+</details>
 
-In **Settings**, turn on:
+<details>
+<summary>Optional: other settings worth changing</summary>
 
-- **Power → Show Battery Percentage**
-- **Displays → Night Light**
+- Settings → Power → Show Battery Percentage
+- Settings → Displays → Night Light
+- Settings → System → About → Device Name (the laptop's name on your network and in the terminal)
+- The Clipboard Indicator extension, from Extension Manager
 
-Name the laptop (shown on your network and in the terminal) in **Settings → System → About → Device Name**.
-
-Extension worth trying in **Extension Manager**: Clipboard Indicator.
-
-> [!CAUTION]
-> Don't install TLP or other power tools. Ubuntu already manages power, and they conflict. Switch power modes from the top-right menu instead.
+</details>
 
 ## 6. Install apps
 
-Each app comes from the source that keeps it updated automatically:
+| App                                     | From                       | Why                                            |
+| --------------------------------------- | -------------------------- | ---------------------------------------------- |
+| VLC, qBittorrent, Fastfetch, Steam, Git | Ubuntu                     | Packaged and kept up to date by Ubuntu         |
+| Chrome, Proton VPN, VS Code, OBS Studio | The maker's own repository | Official builds, delivered by Ubuntu's updater |
+| Discord, Obsidian, Bitwarden            | Flathub                    | Their `.deb` files don't update themselves     |
+| Firefox, Thunderbird (optional)         | Flathub                    | Ubuntu's versions are Snaps                    |
 
-| App                                     | Installed from                  | Why                                                                           |
-| --------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
-| VLC, qBittorrent, Fastfetch, Steam, Git | Ubuntu                          | Packaged by Ubuntu, updated with the system                                   |
-| OBS Studio                              | OBS's own repository (PPA)      | Official, updated with the system                                             |
-| Chrome                                  | Google's repository             | Official, updated with the system                                             |
-| Proton VPN                              | Proton's repository             | Official, updated with the system                                             |
-| VS Code                                 | Microsoft's repository (step 7) | Official, updated with the system                                             |
-| Discord, Obsidian                       | Flathub                         | Their `.deb` files have no repository, so you'd download every update by hand |
-| Firefox, Thunderbird (optional)         | Flathub                         | Ubuntu's versions are Snaps                                                   |
+### Set up Flathub
 
-### Set up Flathub and GNOME Software
-
-**Software** is GNOME's app store. It installs apps from Flathub and updates them in the background:
+Software is GNOME's app store; it installs Flathub apps and updates them in the background. This installs it, adds Flathub, and restarts so Flathub apps show up in the app grid:
 
 ```bash
-sudo apt install flatpak gnome-software gnome-software-plugin-flatpak
+sudo apt install flatpak gnome-software gnome-software-plugin-flatpak && flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo && sudo reboot
 ```
 
-```bash
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-```
-
-Restart so Flathub apps appear in the app grid:
-
-```bash
-sudo reboot
-```
-
-### Keep Snap, but don't use it
-
-Leave Snap installed. Ubuntu's upgrades are tested with it, and some of Ubuntu's own tools are Snaps: Firmware Updater, Security Center and, if you chose it, hardware-backed (TPM) disk encryption. They update themselves.
-
-> [!WARNING]
-> Don't add apps from Snap:
->
-> - Install apps with this guide's commands or from **Software**, not from **App Center** or with `snap install`.
-> - Don't `apt install firefox`, `thunderbird` or `chromium-browser`. On Ubuntu those install the Snap. Get Firefox and Thunderbird from Flathub (below).
-
-Optionally, remove the Snap apps you won't use. Firefox, if Chrome is your browser:
-
-```bash
-sudo snap remove firefox
-```
-
-App Center, since Software replaces it:
-
-```bash
-sudo snap remove snap-store
-```
-
-Leave everything else in `snap list` alone; it's Snap's support files and Ubuntu's own tools.
+Leave Snap installed: Ubuntu's upgrades are tested with it, and Firmware Updater and Security Center are Snaps. Just don't add apps from it. Use this guide's commands or Software instead of App Center or `snap install`, and don't `apt install firefox`, `thunderbird` or `chromium-browser`, because on Ubuntu those install the Snap.
 
 ### Install the apps
 
-**Chrome.** Google's package also adds Google's repository, so Chrome updates with the system:
+**Chrome.** Google's package also adds Google's repository:
 
 ```bash
 wget -P /tmp https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo apt install /tmp/google-chrome-stable_current_amd64.deb
@@ -270,84 +179,97 @@ wget -P /tmp https://dl.google.com/linux/direct/google-chrome-stable_current_amd
 sudo apt install vlc qbittorrent fastfetch
 ```
 
+**Discord, Obsidian, Bitwarden and Flatseal.** Flatseal controls which folders Flatpak apps can reach. Answer `y` when asked:
+
+```bash
+flatpak install flathub com.discordapp.Discord md.obsidian.Obsidian com.bitwarden.desktop com.github.tchx84.Flatseal
+```
+
+To fill in passwords on websites, also add the Bitwarden extension to Chrome from the Chrome Web Store.
+
 **OBS Studio.** Press <kbd>Enter</kbd> when asked to add the repository:
 
 ```bash
 sudo add-apt-repository ppa:obsproject/obs-studio && sudo apt install obs-studio
 ```
 
-If adding the repository fails, use OBS's official Flatpak instead:
+If adding the repository fails, use the Flatpak instead: `flatpak install flathub com.obsproject.Studio`.
+
+**Proton VPN.** First Proton's repository:
 
 ```bash
-flatpak install flathub com.obsproject.Studio
+wget -P /tmp https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.10_all.deb
+sudo apt install /tmp/protonvpn-stable-release_1.0.10_all.deb && sudo apt update
 ```
 
-**Discord and Obsidian.** Answer `y` when asked:
-
-```bash
-flatpak install flathub com.discordapp.Discord md.obsidian.Obsidian
-```
-
-**Flatseal** lets you change what Flatpak apps can reach, such as a folder outside your home folder:
-
-```bash
-flatpak install flathub com.github.tchx84.Flatseal
-```
-
-**Firefox and Thunderbird** (optional, Mozilla's official versions):
-
-```bash
-flatpak install flathub org.mozilla.firefox org.mozilla.Thunderbird
-```
-
-**Proton VPN.** First add Proton's repository:
-
-```bash
-wget -P /tmp https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.10_all.deb && sudo apt install /tmp/protonvpn-stable-release_1.0.10_all.deb && sudo apt update
-```
-
-> [!NOTE]
-> If this fails, Proton has released a newer version of the file. Get the current command from [Proton's guide](https://protonvpn.com/support/official-linux-vpn-ubuntu).
-
-Then install the app:
+Then the app:
 
 ```bash
 sudo apt install proton-vpn-gnome-desktop
 ```
 
-**Steam.** Steam needs 32-bit libraries, so this turns them on first:
+If the download fails, Proton has released a newer file. [Proton's guide](https://protonvpn.com/support/official-linux-vpn-ubuntu) has the current command.
+
+**Steam.** It needs 32-bit packages turned on first:
 
 ```bash
 sudo dpkg --add-architecture i386 && sudo apt update && sudo apt install steam-installer
 ```
 
-Many games also need the 32-bit NVIDIA library. This picks the version that matches your driver:
+Many games also need the 32-bit NVIDIA library. This installs the one matching your driver:
 
 ```bash
 sudo apt install libnvidia-gl-$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | cut -d. -f1):i386
 ```
 
-**Run Steam games on the RTX 5060 (optional).** Right-click Steam in the app grid. If you see **Launch using Integrated Graphics Card**, Steam already uses the RTX 5060; skip this. Otherwise, make Steam always start on it, so games launched from it do too:
+From now on, `sudo apt update` may print `doesn't support architecture 'i386'` for Chrome, VS Code or OBS. You can ignore it.
+
+<details>
+<summary>Optional: run all Steam games on the RTX 5060</summary>
+
+Right-click Steam in the app grid. If you see "Launch using Integrated Graphics Card", it already uses the RTX 5060 and you can skip this. Otherwise:
 
 ```bash
 mkdir -p ~/.local/share/applications && cp /usr/share/applications/steam.desktop ~/.local/share/applications/ && sed -i '/^\[Desktop Entry\]/a PrefersNonDefaultGPU=true' ~/.local/share/applications/steam.desktop
 ```
 
-Then quit Steam fully (Steam menu → **Exit**) and turn off its start-at-login option. While a game runs, `nvidia-smi` should list it under **Processes**.
+Quit Steam fully (Steam menu → Exit) and turn off its start-at-login option. While a game runs, `nvidia-smi` should list it.
 
-### Finding more apps
+</details>
 
-Search in **Software**. When an app is offered from both Ubuntu and Flathub, use Ubuntu's version if it's recent enough, Flathub's if it's missing or old.
+<details>
+<summary>Optional: Firefox and Thunderbird</summary>
+
+Mozilla's official versions:
+
+```bash
+flatpak install flathub org.mozilla.firefox org.mozilla.Thunderbird
+```
+
+</details>
+
+<details>
+<summary>Optional: remove Snap apps you won't use</summary>
+
+Firefox's Snap (if you use Chrome or the Flatpak) and App Center (Software replaces it):
+
+```bash
+sudo snap remove firefox snap-store
+```
+
+Leave everything else in `snap list` alone. It's Snap's support files and Ubuntu's own tools.
+
+</details>
+
+For anything else, search in Software. If an app is offered from both Ubuntu and Flathub, take Ubuntu's version when it's recent enough and Flathub's when it's missing or old.
 
 ## 7. Set up Git and VS Code
 
-Git is the version-control tool most code projects use:
+Install Git, then set your own name and email:
 
 ```bash
 sudo apt install git
 ```
-
-Replace the name and email with yours, then paste:
 
 ```bash
 git config --global user.name "Your Name"
@@ -355,7 +277,7 @@ git config --global user.email "you@example.com"
 git config --global init.defaultBranch main
 ```
 
-**VS Code**, from Microsoft's package. When asked whether to add Microsoft's repository, choose **Yes** so VS Code updates with the system:
+For VS Code, answer Yes when it asks to add Microsoft's repository, so it keeps getting updates:
 
 ```bash
 wget -O /tmp/code.deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" && sudo apt install /tmp/code.deb
@@ -363,112 +285,99 @@ wget -O /tmp/code.deb "https://code.visualstudio.com/sha/download?build=stable&o
 
 ## 8. Set up backups
 
-**Backups** (Déjà Dup) saves your personal files to Google Drive. Install it with `rclone`, which it needs to reach Google Drive:
+Backups (Déjà Dup) copies your personal files to Google Drive, and needs `rclone` to reach it:
 
 ```bash
 sudo apt install deja-dup rclone
 ```
 
-Open **Backups**, choose **Google Drive** as the storage location, sign in, and turn on automatic backups.
+Open Backups, choose Google Drive, sign in, and turn on automatic backups. Once the first one finishes, restore a single file from the Restore tab to make sure it works.
 
 > [!WARNING]
-> Keep the encryption password safe. Without it, your backups can't be restored.
+> Keep the encryption password somewhere safe. Without it, the backups can't be restored.
 
-- Backups cover your files, not your apps. To rebuild the laptop, reinstall Ubuntu, follow this guide, then restore your files.
-- Once the first backup finishes, test it: in **Backups → Restore**, restore one file.
+Backups cover your files, not your apps. To rebuild the laptop, reinstall Ubuntu, follow this guide, then restore your files.
 
 ## 9. Maintenance and upgrades
 
-### Weekly updates
-
-Let **Software Updater** and **Software** do it when they pop up, or run:
+Once a week, let Software Updater and Software install their updates when they pop up, or run:
 
 ```bash
-sudo apt update && sudo apt full-upgrade
+sudo apt update && sudo apt full-upgrade && flatpak update
 ```
 
-```bash
-flatpak update
-```
-
-### Monthly clean-up
-
-Removes packages and Flatpak runtimes nothing uses any more:
+Every month or so, clear out what nothing uses any more:
 
 ```bash
-sudo apt autoremove
-```
-
-```bash
-flatpak uninstall --unused
+sudo apt autoremove && flatpak uninstall --unused
 ```
 
 ### Upgrading to the next Ubuntu LTS
 
-A new LTS comes out every two years. **Software Updater** offers it once the first point release is out (for example 28.04.1, around August 2028).
-
-> [!TIP]
-> Wait for that offer instead of upgrading on release day. By then the early bugs are fixed and the outside repositories (Chrome, OBS and so on) support the new release.
-
-#### What happens to this setup
-
-Nothing in this guide blocks an upgrade, but a few things need a check afterwards:
-
-| What                                    | After the upgrade                          | What to do                                      |
-| --------------------------------------- | ------------------------------------------ | ----------------------------------------------- |
-| Ubuntu packages, NVIDIA driver          | Upgraded automatically                     | Check `nvidia-smi` works                        |
-| Flatpak apps                            | Unaffected                                 | Nothing                                         |
-| Chrome, VS Code, Proton VPN, OBS        | Their repositories are switched off        | Turn them back on ("After", step 3)             |
-| GNOME session and settings              | Kept                                       | If it won't start, log in to **Ubuntu** instead |
-| Login screen theme                      | Kept                                       | If it looks broken, see "If something breaks"   |
-| Extensions you added                    | Often break with a new GNOME               | Turn off before, back on one at a time after    |
-| Removed Snap apps (Firefox, App Center) | May come back                              | Remove them again                               |
-| 32-bit NVIDIA library                   | Usually upgraded with the driver           | If games stop starting, re-run its command      |
-| Steam's RTX 5060 shortcut               | Kept, but Steam's updates don't refresh it | If Steam won't open, delete it and redo it      |
+Software Updater offers the next LTS once its first point release is out (28.04.1, around August 2028). Wait for that instead of upgrading on release day.
 
 #### Before
 
-- [ ] Plug in the charger and make sure at least 10 GB is free (`df -h /` shows it).
-- [ ] Run a backup (step 8).
-- [ ] Install all current updates, then restart: `sudo apt update && sudo apt full-upgrade`.
-- [ ] In **Extension Manager**, turn off the extensions you added (such as Clipboard Indicator). Leave **Ubuntu AppIndicators** on.
+- [ ] Plug in the charger and check there's at least 10 GB free (`df -h /`).
+- [ ] Run a backup.
+- [ ] Install all current updates and restart.
+- [ ] In Extension Manager, turn off the extensions you added yourself. Leave Ubuntu AppIndicators on.
 
 #### During
 
-Click **Upgrade** in **Software Updater**. A **Foreign Packages Installed** message is normal (it means Chrome, VS Code and so on); continue. Approve removing obsolete packages, then restart.
+Click Upgrade in Software Updater. A "Foreign Packages Installed" message is expected; continue. Approve removing obsolete packages, then restart.
 
 #### After
 
-1. Log in and check that everything works.
-2. Check the NVIDIA driver with `nvidia-smi`.
-3. Open **Software & Updates → Other Software** and tick the entries for Chrome, VS Code, Proton VPN and OBS. Then run `sudo apt update`. If OBS's line shows an error, its repository doesn't support the new release yet: untick it and try again in a few weeks, or switch to OBS's Flatpak.
-4. Turn your extensions back on one at a time. If the desktop misbehaves, turn the last one off and wait for an update to it.
-5. Run `snap list` and remove Firefox or App Center again if they came back.
+1. Check `nvidia-smi` still lists the RTX 5060.
+2. In Software & Updates → Other Software, tick the entries for VS Code, Proton VPN and OBS. Chrome's turns itself back on. Then update everything:
 
-#### If something breaks
+   ```bash
+   sudo apt update && sudo apt full-upgrade && flatpak update
+   ```
+
+   If OBS's line shows an error, its repository doesn't support the new release yet. Untick it and try again in a few weeks, or switch to OBS's Flatpak.
+3. Turn your extensions back on one at a time. If the desktop misbehaves, turn the last one off again.
+4. Run `snap list` and remove Firefox or App Center again if they came back.
 
 <details>
-<summary><b>GNOME session won't start or looks wrong</b></summary>
+<summary>What happens to each part of this setup</summary>
 
-On the login screen, click the gear icon, choose **Ubuntu**, and fix things from there.
+| What                                    | After the upgrade                          | What to do                                   |
+| --------------------------------------- | ------------------------------------------ | -------------------------------------------- |
+| Ubuntu packages, NVIDIA driver          | Upgraded automatically                     | Check `nvidia-smi` works                     |
+| Flatpak apps                            | Unaffected                                 | `flatpak update` to match the new driver     |
+| Chrome                                  | Switched off, then Chrome turns it back on | Nothing                                      |
+| VS Code, Proton VPN, OBS                | Their repositories are switched off        | Turn them back on ("After", step 2)          |
+| GNOME session and settings              | Kept                                       | If it won't start, log in to Ubuntu instead  |
+| Login screen theme                      | Kept                                       | If it looks broken, see below                |
+| Extensions you added                    | Often break with a new GNOME               | Turn off before, back on one at a time after |
+| Removed Snap apps (Firefox, App Center) | May come back                              | Remove them again                            |
+| 32-bit NVIDIA library                   | Usually upgraded with the driver           | If games stop starting, re-run its command   |
+| Steam's RTX 5060 shortcut               | Kept, but Steam's updates don't refresh it | If Steam won't open, see below               |
 
 </details>
 
 <details>
-<summary><b>Login screen looks broken</b></summary>
+<summary>If something breaks</summary>
 
-Reset it to Ubuntu's default:
+The upgrade stops because of foreign packages: uninstall the apps that came from outside Ubuntu (OBS, VS Code, Proton VPN, Chrome), run the upgrade again, then reinstall them with steps 6 and 7.
+
+`nvidia-smi` fails: reinstall the recommended driver and restart.
+
+```bash
+sudo ubuntu-drivers install && sudo reboot
+```
+
+The GNOME session won't start or looks wrong: click the gear icon on the login screen, choose Ubuntu, and fix things from there.
+
+The login screen looks broken: reset it to Ubuntu's default.
 
 ```bash
 sudo update-alternatives --auto gdm-theme.gresource && sudo update-alternatives --auto gdm-icons.gresource
 ```
 
-</details>
-
-<details>
-<summary><b>Steam won't open after an update</b></summary>
-
-Delete the shortcut copy, then redo the RTX 5060 part of step 6:
+Steam won't open: delete the shortcut copy, then redo the optional RTX 5060 part of step 6.
 
 ```bash
 rm ~/.local/share/applications/steam.desktop
