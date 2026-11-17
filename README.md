@@ -1,11 +1,21 @@
 # Ubuntu Setup: My Laptop
 
-My checklist for a fresh Ubuntu 26.04 LTS install on this laptop. Do the steps in order; the folded "Optional" parts can be skipped. It takes about an hour, plus downloads.
+My checklist for a fresh Ubuntu 26.04 LTS install on my Lenovo Legion 5 15AHP10. Do the steps in order; the folded "Optional" parts can be skipped. It takes about an hour, plus downloads.
 
 | Part               | Model                          | Setup needed                                                                        |
 | ------------------ | ------------------------------ | ----------------------------------------------------------------------------------- |
 | CPU + graphics     | AMD Ryzen 7 260, Radeon 780M   | Video acceleration check ([step 3](#3-install-codecs-and-check-video-acceleration)) |
 | Dedicated graphics | NVIDIA GeForce RTX 5060 Laptop | NVIDIA driver ([step 4](#4-install-the-nvidia-driver))                              |
+
+## Install Ubuntu
+
+1. Write the Ubuntu 26.04 LTS image to a USB stick of 8 GB or more, using Rufus or balenaEtcher.
+2. While Windows is still on the laptop, open Lenovo Legion Space (or Lenovo Vantage) and set the GPU mode to **Hybrid**. Linux keeps whatever mode is set here, and "Hybrid-iGPU only" hides the RTX 5060 from Ubuntu.
+3. Plug in the USB stick and the charger, then restart.
+4. As soon as the screen goes dark, tap <kbd>F12</kbd> repeatedly until the boot menu appears, then choose the USB stick. If <kbd>F12</kbd> does nothing, try <kbd>Fn</kbd> + <kbd>F12</kbd>. (<kbd>F2</kbd> opens the BIOS instead.)
+5. In the installer, tick "Install third-party software for graphics and Wi-Fi hardware". It installs the NVIDIA driver for you (step 4).
+
+Leave Secure Boot on; Ubuntu works with it.
 
 ## Before you start
 
